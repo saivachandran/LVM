@@ -1,0 +1,185 @@
+
+Logical Volume Manager
+
+Logical Volume Manager is a device mapper target that provides logical volume management for the Linux kernel. Most modern Linux distributions are LVM-aware to the point of being able to have their root file systems on a logical volume
+
+Written in: C
+Operating system: Linux
+Stable release: 2.02.176 / 3 November 2017; 2 years ago
+
+What is partition and types of partition?
+
+There are three types of partitions: primary partitions, extended partitions and logical drives. A disk may contain up to four primary partitions (only one of which can be active), or three primary partitions and one extended partition
+ Linux
+
+Logic volume component.
+
+1.physical storage
+2.physical volume
+3.volume group
+4.logical volume
+
+1.physical storage
+
+ physical storage is a block device could be disk parttion
+
+2.physical volume
+
+  Physical volume is the actual storage device that will be used in the LVM configuration. It can be an entire disk, a partition on disk
+
+3.volume group
+
+The Volume Group is the highest level abstraction used within the LVM. It gathers together a collection of Logical Volumes and Physical Volumes into one administrative unit
+
+4.logical volume
+
+LVM is a tool for logical volume management which includes allocating disks, striping, mirroring and resizing logical volumes. With LVM, a hard drive or set of hard drives is allocated to one or more physical volumes. LVM physical volumes can be placed on other block devices which might span two or more disks.
+
+The LVM Configuration Files
+The following files are used for LVM configuration: 
+/etc/lvm/lvm.conf
+Central configuration file read by the tools. 
+
+
+
+Lvm creation steps
+
+Let's find out about our hard disks:
+#fdisk -l
+#fdisk /dev/sda
+Command (m for help): <-- m
+Command (m for help): <-- n
+Command action
+e extended
+p primary partition (1-4)
+<-- p
+Partition number (1-4): <-- 1
+First cylinder (1-10443, default 1): <-- <ENTER>
+Using default value 1
+Last cylinder or +size or +sizeM or +sizeK (1-10443, default 10443): <-- +1G
+Command (m for help): <-- t
+Selected partition 1
+Hex code (type L to list codes): <-- L
+Hex code (type L to list codes): <-- 8e
+Changed system type of partition 1 to 8e (Linux LVM)
+Command (m for help): <-- p
+Command (m for help): <-- w
+same configuration create another two partition
+Then run
+#partprobe (or) partx -a -v /dev/sda /
+#fdisk -l
+/we informed new partition tables reload to os
+
+
+Create physical volume
+
+#pvcreate /dev/sda1
+
+check physical volume greated or not
+
+#pvdisplay (or) pvscan (or) pvs
+
+"/dev/sdb1" is a new physical volume of "2.00 GiB"
+  --- NEW Physical volume ---
+  PV Name               /dev/sdb1
+  VG Name               
+  PV Size                 2.00 GiB
+  Allocatable             NO
+  PE Size                   0   
+  Total PE                  0
+  Free PE                   0
+  Allocated PE           0
+  PV UUID               zM4aqm-F91C-vExN-2ToT-g27n-6gCV-mvzNAp
+   
+
+Greate volume group and add pv to that gorup
+
+     # vgcreate sai /dev/sdb1
+     Volume group "sai" successfully created
+
+ Check volume group created or not
+
+     # vgdisplay
+     #vgs
+     #vgscan
+
+Next create directory to mount lvm:
+
+  #mkdir  /data1
+  #mkdir /data2
+
+Now we format those LVM's into ext4 FS:
+#mkfs.ext4 /dev/sai/firstlv
+#mkfs.ext4 /dev/sai1/secondlv
+  
+edit /etc/fstab and add entry
+
+  /dev/sai/firstlv      /data1         ext4    defaults  0 0
+
+ /dev/sai1/secondlv   /data2       ext4    defaults  0 0
+
+/dev/sai/firstlv --- device
+
+/data1 – mountpoint
+
+ext4 – filesystem type
+
+defaults-- mount options
+
+00 --- filesystem check 
+
+#mount -a
+#df -Th
+
+Extend lvm size upto 500Mb for /data1
+
+ # lvextend -L +500M /dev/sai/firstlv
+  size of logical volume sai/firstlv changed from 1.00 GiB (256 extents) to <1.49 GiB (381 extents).
+  Logical volume sai/firstlv successfully resized.
+
+# resize2fs /dev/sai/firstlv 
+resize2fs 1.42.9 (28-Dec-2013)
+Filesystem at /dev/sai/firstlv is mounted on /data1; on-line resizing required
+old_desc_blocks = 1, new_desc_blocks = 1
+The filesystem on /dev/sai/firstlv is now 390144 blocks long.
+
+Reduce lvm size upto 500M for /data2
+
+#umount /data2
+#e2fsck -f /dev/sai1/secondlv
+#resize2fs /dev/sai1/secondlv 500M
+#lvreduce -L 500M /dev/sai1/secondlv
+#mount -a
+#df -Th
+
+lvm snapshot 
+
+  # lvcreate -L 300M -s -n lvsnap1 /dev/sai/firstlv
+
+  # mount /dev/sai/lvsnap1 /var
+
+Open the lvm configuration file using your choice of editor.
+# vim /etc/lvm/lvm.conf
+  snapshot restore
+
+  # lvconvert --merge /dev/sai/snaplv2
+Delaying merge since origin is open.
+Merging of snapshot ol/snap will occur on next activation of ol/root.
+
+Map Logical value (LV) to Physical volume (PV):
+# lvs -ao +devices
+
+The snapshot should merge during boot and the boot should complete successfully.
+# reboot
+#ls
+
+extend volume group  and lv with new pv
+
+#pvcreate /dev/sdb3
+
+#vgextend sai /dev/sdb3  ==> extend volume group
+#lvextend /dev/sai/firstlv /dev/sdb3
+#resize2fs /dev/sai/firstlv
+
+
+
