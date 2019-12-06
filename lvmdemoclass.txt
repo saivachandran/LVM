@@ -181,5 +181,10 @@ extend volume group  and lv with new pv
 #lvextend /dev/sai/firstlv /dev/sdb3
 #resize2fs /dev/sai/firstlv
 
+rename volumegroup
+
+#vgrename sai kavi
+
+ 
 
 
