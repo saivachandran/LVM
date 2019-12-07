@@ -230,5 +230,23 @@ Features of Striping
    touch 1.txt
 
  
+lvm mirroring
+Logical volume manager (LVM) mirroring provides the ability to allocate more than one copy of a physical partition to increase the availability of the data. When a disk fails and its physical partitions become unavailable, you still have access to mirrored data on an available disk.
+
+pvcreate /dev/sde
+       pvcreate /dev/sdf
+       pvdisplay
+       vgcreate mir_vg /dev/sdbe /dev/sdf
+       vgcreate mir_vg /dev/sde /dev/sdf
+       vgdisplay mir_vg
+       vgdisplay mir_vg -m
+       lvcreate -L 100M -m1 -n mirrorlv mir_vg
+       lvdisplay mirror_lv
+       lvdisplay mir_vg/mirrolv
+       lvdisplay mir_vg/mirrorlv
+       mkfs.ext4 /dev/mir_vg/mirrorlv 
+       mount /dev/mir_vg/mirrorlv /mnt/
+       lsblk
+       mount -a
 
 
