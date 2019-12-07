@@ -185,6 +185,50 @@ rename volumegroup
 
 #vgrename sai kavi
 
+
+lvm striping
+
+LVM Striping is one of the feature which will writes the data over multiple disk, instead of constant write on a single Physical volume.
+Features of Striping
+
+    It will increase the performance of disk.
+    Saves from hard write over and over to a single disk.
+    Disk fill-up can be reduced using striping over multiple disk.
+
+
+   fdisk -l | grep sd
+   pvcreate /dev/sdc
+   pvcreate /dev/sdd
+   pvdisplay
+   vgcreate -s 16M vg_strip /dev/sd[c-d]1 -v
+   lsblk
+   vgcreate -s 16M vg_strip /dev/sdc -v
+    vgcreate -s 16M vg_strip /dev/sdd -v
+   vgextend -s 16M vg_stripe /dev/sdd -v
+   vgextend vg_stripe /dev/sdd -v
+   vgextend vg_strip /dev/sdd -v
+   vgs vg_strip
+   vgdisplay vg_strip
+    lvcreate -L 900M -n lv_sai_strip -i2 vg_strip
+    lvdisplay lv_sai_strip -v
+   lvdisplay vg_strip/lv_sai_strip
+   lvdisplay vg_strip/lv_sai_strip -v
+   lvdisplay vg_strip/lv_sai_strip -m
+   lvcreate -L 500M -i3 -I 256 -n lv_sai_strip1 vg_strip /dev/sdc /dev/sdd
+   lvcreate -L 500M -i3 -I 256 -n lv_sai_strip1 vg_strip
+   lvcreate -L 500M -i2 -I 256 -n lv_sai_strip1 vg_strip /dev/sdc /dev/sdd
+   lvdisplay vg_strip/lv_sai_strip1
+   lvdisplay vg_strip/lv_sai_strip1 -m
+   dmsetup deps /dev/vg_strip/lv_sai_strip[1]
+   lsblk
+   mount /dev/vg_strip/lv_sai_strip /var
+   mkfs.ext4 /dev/vg_strip/lv_sai_strip 
+   mount /dev/vg_strip/lv_sai_strip /var
+   lsblk
+   cd /var/
+   ls
+   touch 1.txt
+
  
 
 
